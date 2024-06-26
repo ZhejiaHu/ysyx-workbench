@@ -56,17 +56,20 @@ static int cmd_q(char *args) {
 
 static int cmd_help(char *args);
 
+static int cmd_si(char *args);
+
+static int cmd_r(char *args);
+
 static struct {
   const char *name;
   const char *description;
   int (*handler) (char *);
 } cmd_table [] = {
-  { "help", "Display information about all supported commands", cmd_help },
-  { "c", "Continue the execution of the program", cmd_c },
-  { "q", "Exit NEMU", cmd_q },
-
-  /* TODO: Add more commands */
-
+  { "help"  , "Display information about all supported commands", cmd_help },
+  { "c"     , "Continue the execution of the program", cmd_c },
+  { "q"     , "Exit NEMU", cmd_q },
+  { "si"    , "Execute target number of steps (default 1 step)", cmd_si },
+  { "r"     , "Show the values in all registers", cmd_r}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
@@ -91,6 +94,20 @@ static int cmd_help(char *args) {
     }
     printf("Unknown command '%s'\n", arg);
   }
+  return 0;
+}
+
+static int cmd_si(char *args) {
+  int num_step;
+  if (args == NULL || sscanf(args, "%d", &num_step) == EOF) num_step = 1;
+  cpu_exec(num_step);
+  return 0;
+}
+
+static int cmd_r(char *args) {
+  char *sub_cmd = strtok(NULL, " ");
+  if (sub_cmd != NULL) assert(0);
+  isa_reg_display();
   return 0;
 }
 
