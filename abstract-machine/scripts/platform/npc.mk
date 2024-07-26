@@ -22,4 +22,4 @@ image: $(IMAGE).elf
 
 run: image
 	$(MAKE) -C $(NPC_HOME) sim
-	$(MAKE) -C $(NPC_HOME) run
+	$(MAKE) -C $(NPC_HOME) run IMAGE=$(IMAGE)

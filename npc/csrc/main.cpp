@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -9,6 +10,7 @@
 #include "svdpi.h"  
 #include "verilated.h"
 #include "verilated_vcd_c.h"
+#include "include/debug.h"
 
 
 #define PG_ALIGN __attribute((aligned(4096)))
@@ -63,8 +65,8 @@ static void load_image() {
 }
 
 
-bool proceed = true;
-paddr_t pc = 0x80000000;
+bool finish = false;
+
 
 // Default image: 
 // 00440413: addi	s0,s0,4         |-> x8 = 4
@@ -99,10 +101,20 @@ static inline word_t host_read(void* addr, int len) {
         case 2: return *(uint16_t *) addr;
         case 4: return *(uint32_t *) addr;
     }
+	return 0;
+}
+
+static inline void host_write(void* addr, int len, word_t data) {
+	switch (len) {
+		case 1: *(uint8_t *) addr = data; return;
+		case 2: *(uint16_t *) addr = data; return;
+		case 4: *(uint32_t *) addr = data; return; 
+	}
 }
 
 
 static uint8_t* guest_to_host(paddr_t paddr) {
+	std::cout << paddr << " " << paddr - SIM_MBASE << std::endl;
     return pmem + paddr - SIM_MBASE;
 }
 
@@ -112,19 +124,30 @@ static inline bool check_pmem_boundary(uint8_t* host_ptr) {
 }
 
 
-word_t pmem_read(paddr_t paddr, int len) {
-    uint8_t* host_ptr = guest_to_host(paddr);
-    if (check_pmem_boundary(host_ptr)) return host_read(host_ptr, len);
-    else {
-        printf("[pmem.cpp : pmem_read] Invalid host address.\n");
-        assert(0);
-    }
+void terminate_simulation(char exit, int pc) {
+    finish = true;
+	Log("npc: %s at pc = 0x%08" PRIx32, (exit == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) : ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED)), static_cast<paddr_t>(pc));
+    if (exit) throw std::runtime_error("[terminate_simulation.c : terminate_simulation] Test case fails!");
+	else printf("[terminate_simulation.c : terminate_simulation] Simulation terminated.\n");
 }
 
 
-void terminate_simulation() {
-    proceed = false;
-    printf("[terminate_simulation.c : terminate_simulation] Simulation terminated.\n");
+int pmem_read(int raddr) {
+	uint8_t* host_ptr = pmem + static_cast<paddr_t>(raddr & ~0x3u) - SIM_MBASE;
+	word_t value = host_read(host_ptr, 4);
+	printf("[pmem_read] raddr --- 0x%x | value --- 0x%x\n", raddr, value);
+	return value;
+}
+
+
+void pmem_write(int waddr, int wdata_, char wmask) {
+	uint32_t wdata = static_cast<uint32_t>(wdata_);
+	uint8_t* host_ptr = pmem + static_cast<paddr_t>(waddr & ~0x3u) - SIM_MBASE;
+	printf("[pmem_write] waddr --- 0x%x | wdata : 0x%x | wmask : 0x%x\n", waddr, wdata, wmask);
+	int idx = 0;
+	for (int i = 0; i < 4; i++) {
+		if ((wmask >> i) & 0x1) *(host_ptr + i) = static_cast<uint8_t>(wdata >> (idx++ * 8) & 0xFF);
+	}
 }
 
 
@@ -140,37 +163,28 @@ int main(int argc, char** argv) {
     vtop->trace(tfp, 99);
     tfp->open("logs/VTop.vcd");    
 
-    // Resetting
     vtop->reset = 1;
+	vtop->clock = 1;
     for (int i = 0; i < 10; i++) {
         contextp->timeInc(1);
-        vtop->clock = 0;
-        vtop->eval();
-        vtop->clock = 1;
+        vtop->clock = !vtop->clock; 
         vtop->eval();
         tfp->dump(contextp->time());
     }
-    vtop->reset = 0;
-
-    // Simulation
-    while (!contextp->gotFinish() && proceed) {
-        contextp->timeInc(1);
-        word_t curr_inst = pmem_read(pc, INST_SIZE);
-        vtop->io_inst_valid = 0b1;
-        vtop->io_inst_bits = curr_inst;
-        vtop->io_pc_ready = 0b1;
-        printf("[main.cpp : main] Before evaluation --- current_inst : %x | next_pc : %x \n", curr_inst, vtop->io_pc_bits);
-        vtop->clock = 0;
+	vtop->reset = 0;
+	int idx = 0;
+    while (!contextp->gotFinish()) {
+		idx++;
+        vtop->clock = !vtop->clock; 
+		printf("[Index: %d: input] ---------------Begin-----------------------------------------------\n", idx);
         vtop->eval();
-        vtop->clock = 1;
-        vtop->eval();
+		printf("[Index: %d: input] ---------------End-------------------------------------------------\n\n", idx);
         tfp->dump(contextp->time());
-        printf("[main.cpp : main] After evaluation --- pc : %x | io_inst_bits : %x | next_pc : %x\n", pc, vtop->io_inst_bits, vtop->io_pc_bits);
-        assert(vtop->io_pc_valid == 0b1);
-        assert(vtop->io_pc_bits == pc + 4);
-        pc += 4;
+		contextp->timeInc(1);
+		contextp->gotFinish(finish);
+		//if (idx > 10000) throw std::runtime_error("Time Limits Exceeds");
     }
-
+	
     tfp->close();
     printf("[main.cpp : main] Termination has ended.\n");
     return 0;
