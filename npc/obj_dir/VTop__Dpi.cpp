@@ -14,3 +14,11 @@
 #include "VTop__Dpi.h"
 #include "VTop.h"
 
+#ifndef VL_DPIDECL_pc_read_
+#define VL_DPIDECL_pc_read_
+int pc_read() {
+    // DPI export at vsrc/Top.sv:628:14
+    return VTop::pc_read();
+}
+#endif
+

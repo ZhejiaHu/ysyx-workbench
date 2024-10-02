@@ -19,7 +19,12 @@ class InstructionMemory (maddr_width: Int = 32, data_width: Int = 32) extends Bl
 		|	input [MADDR_WIDTH-1:0] pc,
 		|	output reg [DATA_WIDTH-1:0] inst
 		|);
-		|import "DPI-C" function int pmem_read(input int raddr);
+		|import "DPI-C" context function int pmem_read(input int raddr);
+		|export "DPI-C" function pc_read;
+		|
+		|function int pc_read();
+		|	return pc;
+		|endfunction: pc_read
 		|always @(*) begin
 		|	if (pc != 0) inst = pmem_read(pc);
 		|	else inst = 0;

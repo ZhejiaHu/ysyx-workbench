@@ -15,12 +15,16 @@ extern "C" {
 #endif
 
 
+    // DPI EXPORTS
+    // DPI export at vsrc/Top.sv:628:14
+    extern int pc_read();
+
     // DPI IMPORTS
-    // DPI import at vsrc/Top.sv:578:29
+    // DPI import at vsrc/Top.sv:578:37
     extern int pmem_read(int raddr);
-    // DPI import at vsrc/Top.sv:579:30
+    // DPI import at vsrc/Top.sv:579:38
     extern void pmem_write(int waddr, int wdata, char wmask);
-    // DPI import at vsrc/Top.sv:642:30
+    // DPI import at vsrc/Top.sv:647:38
     extern void terminate_simulation(char exit, int pc);
 
 #ifdef __cplusplus

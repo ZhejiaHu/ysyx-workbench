@@ -30,8 +30,8 @@ class Memory (maddr_width: Int = 32, data_width: Int = 32, mem_control_width: In
 		|	output reg [DATA_WIDTH-1:0] mem_rd_data
 		|);
 		|
-		|import "DPI-C" function int pmem_read(input int raddr);
-		|import "DPI-C" function void pmem_write(input int waddr, input int wdata, input byte wmask);
+		|import "DPI-C" context function int pmem_read(input int raddr);
+		|import "DPI-C" context function void pmem_write(input int waddr, input int wdata, input byte wmask);
 		|
 		|reg[MEM_MASK_WIDTH-1:0] mask; 
 		|reg[DATA_WIDTH-1:0] bufs;

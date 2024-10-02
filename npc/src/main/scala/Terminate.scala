@@ -16,7 +16,7 @@ class Terminate (data_width: Int = 32, op_width: Int = 7) extends BlackBox with 
 		|    input exit,
 		|	 input [DATA_WIDTH - 1:0] pc
         |);
-        |import "DPI-C" function void terminate_simulation(input byte exit, input int pc);
+        |import "DPI-C" context function void terminate_simulation(input byte exit, input int pc);
         |always @ (op) begin 
         |    if (op == 7'b1110011) terminate_simulation({7'b0, exit}, pc);
         |end

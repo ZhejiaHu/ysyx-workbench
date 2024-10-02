@@ -17,6 +17,7 @@
 #include "VTop___024root.h"
 
 // DPI TYPES for DPI Export callbacks (Internal use)
+using VTop__Vcb_pc_read_t = void (*) (VTop__Syms* __restrict vlSymsp, IData/*31:0*/ &pc_read__Vfuncrtn);
 
 // SYMS CLASS (contains all model state)
 class VTop__Syms final : public VerilatedSyms {
@@ -30,6 +31,11 @@ class VTop__Syms final : public VerilatedSyms {
 
     // MODULE INSTANCE STATE
     VTop___024root                 TOP;
+
+    // SCOPE NAMES
+    VerilatedScope __Vscope_Top__inst_memory;
+    VerilatedScope __Vscope_Top__memory;
+    VerilatedScope __Vscope_Top__terminate;
 
     // CONSTRUCTORS
     VTop__Syms(VerilatedContext* contextp, const char* namep, VTop* modelp);
